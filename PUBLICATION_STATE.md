@@ -1,5 +1,17 @@
 # Publication state
 
+## 2026-10-20 — Gil Beacon 1.0.0.2 materia pricing and incremental highlights
+
+- Release: https://github.com/Roxyz0501/GilBeacon/releases/tag/v1.0.0.2
+- ZIP: https://github.com/Roxyz0501/GilBeacon/releases/download/v1.0.0.2/GilBeacon-1.0.0.2.zip
+- Source/tag: `9f551ad18feb10805ca0cd98d94cee6100a95232`; ZIP 311,197 bytes; SHA-256 `7CC94A3B230C1EA0459ABC4FF70B6408344448450294DDA60ABF583B5C4A2B85`.
+- Materia item category applies the verified rounded-up 10% resale correction: base144 ->159, so price99 plus tax4 yields56. Ordinary qualityless items remain unchanged. Attached materia and special shop bonuses remain excluded.
+- Available local rows sorted by price (maximum100); no whole-list count/update wait. Visible row price and quantity must match before immediate calculation/drawing. Cutoff uses greatest possible quality value to retain profitable later HQ rows. No network requests or database writes; one cached sheet row per item change. Limits are code-derived, not measured live.
+- Clean Release zero warnings/errors; 20,064 offline checks passed. Canonical tabs byte-identical; source/package credential and local-path scans passed. Seven languages updated; ECommons layout reference documented.
+- Public repository/icon HTTP200, image/png; anonymous ZIP hash matched. Index commit `60bd0d3646ab2677685a68fa4e23142fd00bfa8c`, connector and pinned URL verified1.0.0.2, all12 other entries unchanged. Normal main raw URL initially cached1.0.0.1.
+- Updated live-game row mapping/speed remains unverified. No installed plugin binary replaced. Connector used for source/index/records; CLI only for unsupported Release/asset publication under standing user authorization.
+
+
 ## 2026-10-20 — Gil Beacon 1.0.0.1 highlight fix
 
 - Release: https://github.com/Roxyz0501/GilBeacon/releases/tag/v1.0.0.1

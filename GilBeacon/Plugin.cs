@@ -83,9 +83,10 @@ public sealed unsafe class Plugin : IDalamudPlugin
         var module = InfoModule.Instance();
         if (module == null) return;
         var proxy = module->GetInfoProxyItemSearch();
-        if (proxy == null || proxy->WaitingForListings || proxy->SearchItemId == 0 || proxy->ListingCount > 100) return;
+        if (proxy == null) return;
         var list = addon->Results;
-        if (list->IsUpdatePending || list->IsScrollRefreshPending || list->ListLength != proxy->ListingCount) return;
+        if (!MarketReadiness.CanDraw(proxy->SearchItemId, proxy->ListingCount, list->ListLength,
+            addon->IsReady, list->IsUpdatePending, list->IsScrollRefreshPending)) return;
         if (cachedItem != proxy->SearchItemId)
         {
             cachedItem = proxy->SearchItemId;

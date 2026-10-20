@@ -22,6 +22,8 @@ public sealed unsafe class Plugin : IDalamudPlugin
     private bool open;
     private uint cachedItem;
     private uint sellPrice;
+    private bool canHq;
+    private bool materia;
     private readonly CommandInfo command;
 
     public Plugin(IDalamudPluginInterface pi, ICommandManager commands, IGameGui gui, IDataManager data, IClientState client)
@@ -90,19 +92,42 @@ public sealed unsafe class Plugin : IDalamudPlugin
         if (cachedItem != proxy->SearchItemId)
         {
             cachedItem = proxy->SearchItemId;
-            sellPrice = data.GetExcelSheet<Item>().TryGetRow(cachedItem, out var item) ? item.PriceLow : 0;
+            if (data.GetExcelSheet<Item>().TryGetRow(cachedItem, out var item))
+            {
+                sellPrice = item.PriceLow;
+                canHq = item.CanBeHq;
+                materia = item.ItemUICategory.RowId == 58;
+            }
+            else { sellPrice = 0; canHq = materia = false; }
         }
         if (sellPrice == 0 || list->NumVisibleItems is < 1 or > 100) return;
         int first = Math.Max(0, list->FirstVisibleItemIndex);
-        int end = Math.Min((int)proxy->ListingCount, first + list->NumVisibleItems);
-        for (int i = first; i < end; i++)
+        int count = Math.Min((int)proxy->ListingCount, list->ListLength);
+        int end = Math.Min(count, first + list->NumVisibleItems);
+        // Sort only locally available row indices. No request or wait for missing pages.
+        Span<int> indices = stackalloc int[100];
+        for (int n = 0; n < count; n++)
         {
+            int at = n;
+            while (at > 0 && proxy->Listings[indices[at - 1]].UnitPrice > proxy->Listings[n].UnitPrice)
+            { indices[at] = indices[at - 1]; at--; }
+            indices[at] = n;
+        }
+        for (int n = 0; n < count; n++)
+        {
+            int i = indices[n];
             var offer = proxy->Listings[i];
             if (offer.ListingId == 0 || offer.ItemId != cachedItem || offer.IsMannequin || offer.IsSellingAsSet) continue;
-            ulong profit = Profit.Calculate(sellPrice, offer.UnitPrice, offer.Quantity, offer.TotalTax, offer.IsHqItem);
-            if (profit == 0) continue;
+            if (MarketReadiness.BeyondProfitRange(offer.UnitPrice, sellPrice, canHq, materia)) break;
+            if (i < first || i >= end) continue;
             var renderer = list->GetItemRenderer(i);
             if (renderer == null || renderer->ListItemIndex != i || renderer->OwnerNode == null) continue;
+            var priceNode = renderer->GetTextNodeById(5);
+            var quantityNode = renderer->GetTextNodeById(6);
+            if (priceNode == null || quantityNode == null || !MarketReadiness.MatchesNumbers(
+                priceNode->NodeText.ToString(), quantityNode->NodeText.ToString(), offer.UnitPrice, offer.Quantity)) continue;
+            ulong profit = Profit.Calculate(sellPrice, offer.UnitPrice, offer.Quantity, offer.TotalTax, offer.IsHqItem, materia);
+            if (profit == 0) continue;
             var node = &renderer->OwnerNode->AtkResNode;
             if (!node->IsVisible()) continue;
             Bounds bounds = default;

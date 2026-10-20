@@ -39,14 +39,29 @@ for (int i = 0; i < 10000; i++)
 }
 // Regression: live client had 35 valid rows and ready UI while WaitingForListings stayed true.
 Check(MarketReadiness.CanDraw(41757, 35, 35, true, false, false));
-Check(!MarketReadiness.CanDraw(41757, 35, 34, true, false, false));
+Check(MarketReadiness.CanDraw(41757, 35, 34, true, false, false));
 Check(!MarketReadiness.CanDraw(41757, 35, 35, false, false, false));
-Check(!MarketReadiness.CanDraw(41757, 35, 35, true, true, false));
+Check(MarketReadiness.CanDraw(41757, 35, 35, true, true, false));
 Check(!MarketReadiness.CanDraw(41757, 35, 35, true, false, true));
 Check(!MarketReadiness.CanDraw(0, 35, 35, true, false, false));
 Check(!MarketReadiness.CanDraw(41757, 0, 0, true, false, false));
 Check(!MarketReadiness.CanDraw(41757, 101, 101, true, false, false));
 Check(Profit.Calculate(217, 100, 1, 5) == 112);
 Check(Profit.Calculate(217, 100, 10, 50) == 1120);
+Check(Profit.Calculate(144, 99, 1, 4, materia: true) == 56);
+Check(Profit.Calculate(144, 99, 10, 49, materia: true) == 551);
+Check(Profit.VendorUnit(500, false) == 500); // Qualityless silver piece must not gain 10%.
+Check(Profit.VendorUnit(1, false) == 1); // Qualityless iron ore.
+Check(Profit.VendorUnit(27, false, true) == 30);
+Check(Profit.VendorUnit(151, false, true) == 167);
+Check(Profit.VendorUnit(197, false, true) == 217);
+Check(MarketReadiness.MatchesNumbers("99 G", "1", 99, 1));
+Check(!MarketReadiness.MatchesNumbers("99 G", "1", 199, 1));
+Check(MarketReadiness.MatchesNumbers("1,234", "99", 1234, 99));
+Check(!MarketReadiness.MatchesNumbers("", "1", 0, 1));
+Check(!MarketReadiness.BeyondProfitRange(100, 100, true, false)); // HQ can still profit.
+Check(MarketReadiness.BeyondProfitRange(110, 100, true, false));
+Check(!MarketReadiness.BeyondProfitRange(150, 144, false, true));
+Check(MarketReadiness.BeyondProfitRange(159, 144, false, true));
 Console.WriteLine($"Passed {checks} checks.");
 

@@ -2,7 +2,7 @@
 
 ![icon](GilBeacon/images/icon.png)
 
-Roxyz0501 / 1.0.0.0 / Dalamud API 15 / Apache-2.0
+Roxyz0501 / 1.0.0.1 / Dalamud API 15 / Apache-2.0
 
 マーケット出品一覧で、購入手数料込みでもNPCへの売却で利益が出る行を緑色でハイライトします。行の右側に **+1,234 G** の形式で、その出品全個数の利益総額を表示します。HQにも対応しています。
 
@@ -41,7 +41,7 @@ dotnet build GilBeacon/GilBeacon.csproj -c Release
 dotnet run --project Tests/Tests.csproj -c Release
 ```
 
-20,039 offline checks cover NQ/HQ arithmetic, rounding before multiplication, tax and break-even boundaries, overflow rejection, random BigInteger comparisons, localization completeness and language normalization. These checks do not establish live-game UI correctness.
+20,049 offline checks cover NQ/HQ arithmetic, rounding before multiplication, tax and break-even boundaries, overflow rejection, random BigInteger comparisons, localization completeness and language normalization. These checks do not establish live-game UI correctness.
 
 ## Load budget
 
@@ -58,3 +58,7 @@ New standalone plugin, Apache-2.0. Author: Roxyz0501.
 - Original icon generated for Gil Beacon. No third-party or game artwork reused.
 
 Optional support: [Roxyz0501 on Ko-fi](https://ko-fi.com/roxyz0501).
+
+## 1.0.0.1 fix
+
+Live read-only diagnostics found the SDK WaitingForListings flag set while 35 listings, 10 visible renderers and the addon were ready. Removed this incorrect blocking condition. Readiness now uses the populated list count, addon readiness and UI update/scroll state; each listing still must match the search item. The user-reported 100-gil listing versus 217-gil NPC value is covered by regression tests (112 gil profit for one item with 5 gil tax). Actual rendered output after this update still needs in-game confirmation.

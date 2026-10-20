@@ -1,0 +1,16 @@
+Gil Beacon, Copyright 2026 Roxyz0501. Licensed under Apache-2.0.
+LocalizedFonts.cs and the language utility in Loc.cs reuse selected code from
+Bait Beacon by Roxyz0501 (Apache-2.0), adapted for Gil Beacon on 2026-10-20.
+https://github.com/Roxyz0501/BaitBeacon
+StandardPluginTabs.cs is the canonical Roxyz0501 shared UI template.
+
+FFXIVClientStructs by aers and contributors (MIT) supplies the host-provided
+native API definitions. No host DLLs are redistributed.
+https://github.com/aers/FFXIVClientStructs
+Dalamud and Lumina are provided by the plugin host.
+The icon is original generated artwork for this project, not game artwork.
+
+HQ formula investigation consulted GitHixy/LootView (GPL-3.0),
+Critical-Impact/CriticalCommonLib and a firsthand Lodestone observation.
+No implementation source from those projects is copied; the arithmetic is
+independently implemented. See README for evidence and rounding limitations.

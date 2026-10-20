@@ -1,0 +1,17 @@
+{
+  "Author": "Roxyz0501",
+  "Name": "Gil Beacon",
+  "InternalName": "GilBeacon",
+  "Punchline": "Highlight profitable NPC resale listings, including purchase tax.",
+  "Description": "Highlight profitable market listings and show total NPC resale profit beside each row, including purchase tax and HQ value. Seven UI languages. /gilbeacon. Public preview: live-game row mapping, scrolling and sale totals remain unverified.",
+  "DalamudApiLevel": 15,
+  "ApplicableVersion": "any",
+  "Tags": [
+    "market",
+    "gil",
+    "utility"
+  ],
+  "RepoUrl": "https://github.com/Roxyz0501/GilBeacon",
+  "IconUrl": "https://raw.githubusercontent.com/Roxyz0501/GilBeacon/main/GilBeacon/images/icon.png",
+  "RequiredPlugins": []
+}

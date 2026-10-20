@@ -12,6 +12,7 @@
 - Seven UI languages, canonical trailing tabs and original 512x512 PNG icon. Localized font/language utilities adapted from Roxyz0501 Bait Beacon with Apache-2.0 notice.
 - Clean Release: 0 warnings/errors after fresh NuGet restore; 20,039 offline arithmetic/localization checks passed. Source/package secret and local-path scans passed. Public anonymous repository and PNG returned HTTP 200 (image/png); public ZIP hash matched local.
 - Live-game row mapping, sorting/scrolling, DPI, glyph rendering and NPC receipt totals remain unverified. Right-edge label clipping is disclosed.
+- Final anonymous verification: both normal main and commit-pinned index URLs returned HTTP 200 with 13 entries and GilBeacon 1.0.0.0; all 12 prior entries were unchanged.
 - Shared index commit: `12f98ee8b970f940831651dc87116e4f8d26fe8a`, adding GilBeacon while preserving all 12 prior entries. Normal raw URL initially cached the previous list.
 - Source/index/record writes used the GitHub connector. CLI used for unsupported repository creation, binary icon upload and Release/asset operations. No installed plugin DLL replaced.
 

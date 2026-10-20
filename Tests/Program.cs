@@ -37,5 +37,16 @@ for (int i = 0; i < 10000; i++)
     var expected = BigInteger.Max(0, ((BigInteger)sell * 11 + 9) / 10 * q - (BigInteger)price * q - tax);
     Check(Profit.Calculate(sell, price, q, tax, true) == (ulong)expected);
 }
+// Regression: live client had 35 valid rows and ready UI while WaitingForListings stayed true.
+Check(MarketReadiness.CanDraw(41757, 35, 35, true, false, false));
+Check(!MarketReadiness.CanDraw(41757, 35, 34, true, false, false));
+Check(!MarketReadiness.CanDraw(41757, 35, 35, false, false, false));
+Check(!MarketReadiness.CanDraw(41757, 35, 35, true, true, false));
+Check(!MarketReadiness.CanDraw(41757, 35, 35, true, false, true));
+Check(!MarketReadiness.CanDraw(0, 35, 35, true, false, false));
+Check(!MarketReadiness.CanDraw(41757, 0, 0, true, false, false));
+Check(!MarketReadiness.CanDraw(41757, 101, 101, true, false, false));
+Check(Profit.Calculate(217, 100, 1, 5) == 112);
+Check(Profit.Calculate(217, 100, 10, 50) == 1120);
 Console.WriteLine($"Passed {checks} checks.");
 

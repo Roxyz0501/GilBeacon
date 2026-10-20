@@ -14,3 +14,7 @@ HQ formula investigation consulted GitHixy/LootView (GPL-3.0),
 Critical-Impact/CriticalCommonLib and a firsthand Lodestone observation.
 No implementation source from those projects is copied; the arithmetic is
 independently implemented. See README for evidence and rounding limitations.
+
+ECommons by NightmareXIV (MIT) was consulted for ItemSearchResult
+price/quantity node IDs (native UI layout). No implementation copied.
+https://github.com/NightmareXIV/ECommons

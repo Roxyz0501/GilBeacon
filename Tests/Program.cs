@@ -63,5 +63,6 @@ Check(!MarketReadiness.BeyondProfitRange(100, 100, true, false)); // HQ can stil
 Check(MarketReadiness.BeyondProfitRange(110, 100, true, false));
 Check(!MarketReadiness.BeyondProfitRange(150, 144, false, true));
 Check(MarketReadiness.BeyondProfitRange(159, 144, false, true));
+checks += PersistenceTests.Run(Path.Combine(AppContext.BaseDirectory, "persistence-tests", Guid.NewGuid().ToString("N")));
 Console.WriteLine($"Passed {checks} checks.");
 

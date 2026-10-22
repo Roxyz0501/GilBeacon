@@ -1,5 +1,17 @@
 # Publication state
 
+## 2026-10-22 — Gil Beacon 1.0.0.3 persistence safeguards published
+
+- Release: https://github.com/Roxyz0501/GilBeacon/releases/tag/v1.0.0.3
+- ZIP: https://github.com/Roxyz0501/GilBeacon/releases/download/v1.0.0.3/GilBeacon-1.0.0.3.zip
+- Source/tag: `6fb3085f7d2533f7d1fae44c7b7cfb1478ade3ac`; ZIP 323,868 bytes, eight allowlisted files; SHA-256 `7ED050C6A74F77A053AFF8ED25995EE49A1D585FFE81932917178262D5CCE838`.
+- 60-second changed-only settings, logout/Dispose flush, atomic validated replacement, three valid backups, corruption recovery and bounded failure/manual retry. NPC calculations and highlight method unchanged. No transaction history or empty HistoryFiles tab.
+- 20,133 checks passed (69 persistence); clean Release zero warnings/errors. Unchanged 8-hour simulation zero writes; 600 edits plus logout/Dispose: three commits, 133 logical payload bytes. Canonical tabs byte-identical and source/package scans passed.
+- Public repository/icon HTTP200 (image/png); anonymous ZIP hash matched. Shared index commit `0d9b55163d7ae17ad85061f420346407b95f34bd`: pinned URL and connector verified1.0.0.3, all12 other entries preserved. Normal raw main URL initially cached1.0.0.2.
+- Published at the user's explicit request. Connector used for source/index/records; CLI only for unsupported Release/asset operations. No production migration or installed-DLL replacement. Live-game lifecycle/rendering and physical SSD writes remain unverified; see PERSISTENCE_VERIFICATION.md.
+
+- 2026-10-23 completion: normal public main index now returns 1.0.0.3 (HTTP 200). Publication records resumed after the prior approval-review usage-limit interruption.
+
 ## 2026-10-20 — Gil Beacon 1.0.0.2 materia pricing and incremental highlights
 
 - Release: https://github.com/Roxyz0501/GilBeacon/releases/tag/v1.0.0.2

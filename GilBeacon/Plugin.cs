@@ -19,6 +19,12 @@ public sealed unsafe class Plugin : IDalamudPlugin
     private readonly IDataManager data;
     private readonly Configuration config;
     private readonly LocalizedFonts fonts;
+    private readonly ConfigStore settings;
+    private readonly IFramework framework;
+    private readonly IClientState client;
+    private readonly IPluginLog log;
+    private bool disposed;
+    private string? reportedError;
     private bool open;
     private uint cachedItem;
     private uint sellPrice;
@@ -26,17 +32,20 @@ public sealed unsafe class Plugin : IDalamudPlugin
     private bool materia;
     private readonly CommandInfo command;
 
-    public Plugin(IDalamudPluginInterface pi, ICommandManager commands, IGameGui gui, IDataManager data, IClientState client)
+    public Plugin(IDalamudPluginInterface pi, ICommandManager commands, IGameGui gui, IDataManager data, IClientState client, IFramework framework, IPluginLog log)
     {
         this.pi = pi; this.commands = commands; this.gui = gui; this.data = data;
-        config = pi.GetPluginConfig() as Configuration ?? new();
+        this.framework = framework; this.client = client; this.log = log;
+        settings = new ConfigStore(pi.ConfigFile.FullName);
+        var loaded = settings.Current;
+        config = new Configuration { Version = loaded.Version, Language = loaded.Language, Enabled = loaded.Enabled };
         Loc.CheckCompleteness();
         if (!Loc.IsSupported(config.Language))
         {
             Dalamud.Game.ClientLanguage? game;
             try { game = client.ClientLanguage; } catch { game = null; }
             config.Language = Loc.FromGame(game) ?? Loc.Normalize(pi.UiLanguage) ?? "en";
-            pi.SavePluginConfig(config);
+            Changed();
         }
         fonts = new LocalizedFonts(pi.UiBuilder.FontAtlas, []);
         command = new CommandInfo((_, _) => Open()) { HelpMessage = T("CommandHelp") };
@@ -44,11 +53,28 @@ public sealed unsafe class Plugin : IDalamudPlugin
         pi.UiBuilder.Draw += Draw;
         pi.UiBuilder.OpenMainUi += Open;
         pi.UiBuilder.OpenConfigUi += Open;
+        framework.Update += Update;
+        client.Logout += Logout;
+        if (settings.LoadNotice != null || settings.LoadBlocked) open = true;
     }
     private string T(string key) => Loc.Get(config.Language, key);
-    private void Open() => open = true;
+    private void Open() { if (!disposed) open = true; }
+    private void Changed() => settings.Change(new(config.Version, config.Language, config.Enabled));
+    private void Update(IFramework _) { if (!disposed) { settings.Tick(); ReportSaveError(); } }
+    private void Logout(int type, int code) { if (!disposed) { settings.Flush(); ReportSaveError(); } }
+    private void ReportSaveError()
+    {
+        if (settings.Error == null) { reportedError = null; return; }
+        if (reportedError != null && !settings.Stopped) return;
+        var state = settings.Stopped ? "stopped" : "retrying";
+        if (reportedError == state) return;
+        reportedError = state;
+        open = true;
+        log.Warning("Gil Beacon settings {State}: {Error}", state, settings.Error);
+    }
     private void Draw()
     {
+        if (disposed) return;
         DrawHighlights();
         if (!open) return;
         using var font = fonts.Push(config.Language);
@@ -61,14 +87,23 @@ public sealed unsafe class Plugin : IDalamudPlugin
                 {
                     var enabled = config.Enabled;
                     if (ImGui.Checkbox(T("HighlightEnabled") + "###Enabled", ref enabled))
-                    { config.Enabled = enabled; pi.SavePluginConfig(config); }
+                    { config.Enabled = enabled; Changed(); }
                     ImGui.TextWrapped(T("Explanation"));
+                    ImGui.TextWrapped(T("SavePolicy"));
+                    if (settings.LoadNotice is { } notice) ImGui.TextWrapped(T(notice));
+                    if (settings.Error != null)
+                    {
+                        ImGui.TextWrapped(T(settings.LoadBlocked ? "LoadBlocked" : settings.Stopped ? "SaveStopped" : "SaveFailed"));
+                        ImGui.TextWrapped(settings.Error);
+                        if (!settings.LoadBlocked && ImGui.Button(T("RetrySave") + "###RetrySave"))
+                        { settings.Retry(); ReportSaveError(); }
+                    }
                 }, T("LanguageSettings"), () =>
                 {
                     var changed = StandardPluginTabs.DrawLanguageSelector(T("Language"), T("LanguageHelp"), config.Language!);
                     if (changed != null)
                     {
-                        config.Language = changed; pi.SavePluginConfig(config);
+                        config.Language = changed; Changed();
                         command.HelpMessage = T("CommandHelp");
                     }
                 }, T("Support"), () => StandardPluginTabs.DrawSupportContent(T("SupportHeading"), T("SupportText"), T("SupportRecipient"), T("OpenKoFi")));
@@ -148,11 +183,16 @@ public sealed unsafe class Plugin : IDalamudPlugin
     }
     public void Dispose()
     {
+        if (disposed) return;
+        disposed = true;
+        framework.Update -= Update;
+        client.Logout -= Logout;
         pi.UiBuilder.Draw -= Draw;
         pi.UiBuilder.OpenMainUi -= Open;
         pi.UiBuilder.OpenConfigUi -= Open;
         commands.RemoveHandler("/gilbeacon");
-        fonts.Dispose();
+        try { settings.Dispose(); ReportSaveError(); }
+        finally { fonts.Dispose(); }
     }
 }
 

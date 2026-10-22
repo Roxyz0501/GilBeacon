@@ -2,7 +2,7 @@
 
 ![icon](GilBeacon/images/icon.png)
 
-Roxyz0501 / 1.0.0.2 / Dalamud API 15 / Apache-2.0
+Roxyz0501 / 1.0.0.3 / Dalamud API 15 / Apache-2.0
 
 マーケット出品一覧で、購入手数料込みでもNPCへの売却で利益が出る行を緑色でハイライトします。行の右側に **+1,234 G** の形式で、その出品全個数の利益総額を表示します。HQにも対応しています。
 
@@ -42,11 +42,11 @@ dotnet build GilBeacon/GilBeacon.csproj -c Release
 dotnet run --project Tests/Tests.csproj -c Release
 ```
 
-20,064 offline checks cover NQ/HQ arithmetic, rounding before multiplication, tax and break-even boundaries, overflow rejection, random BigInteger comparisons, localization completeness and language normalization. These checks do not establish live-game UI correctness.
+20,064 arithmetic/localization checks plus persistence regression checks cover NQ/HQ arithmetic, rounding before multiplication, tax and break-even boundaries, overflow rejection, random BigInteger comparisons, localization completeness and language normalization. These checks do not establish live-game UI correctness.
 
 ## Load budget
 
-No external HTTP requests or market requests. No database. At most one local Item-sheet row lookup on item change; unchanged redraws perform zero sheet lookups. Cache holds one item and is invalidated on close. At most 100 locally available row indices are sorted by price per draw. Profit checks stop at the maximum possible resale value (including HQ when supported); only visible profitable candidates have their renderer text checked and are drawn immediately in that loop. Partial results do not wait for count equality or the global update flag. Price and quantity must match the displayed row. No requests are added; game-side listing delivery can still delay availability. Config writes occur only for initial language selection and actual user changes. These are code-derived limits, not live-game measurements.
+No external HTTP requests or market requests. No database. At most one local Item-sheet row lookup on item change; unchanged redraws perform zero sheet lookups. Cache holds one item and is invalidated on close. At most 100 locally available row indices are sorted by price per draw. Profit checks stop at the maximum possible resale value (including HQ when supported); only visible profitable candidates have their renderer text checked and are drawn immediately in that loop. Partial results do not wait for count equality or the global update flag. Price and quantity must match the displayed row. No requests are added; game-side listing delivery can still delay availability. Changed config values are saved at 60-second checkpoints and on logout/disposal; equivalent values perform no serialization or writes. One bounded synchronous writer handles the tiny settings payload, with no background task or timer. These are code-derived limits, not live-game measurements.
 
 ## Sources and license
 
@@ -71,3 +71,11 @@ Live read-only diagnostics found the SDK WaitingForListings flag set while 35 li
 受信済みの出品を安い順に判定し、利益が出る表示行をその場で描画します。全件受信や件数一致を待ちません。後続のHQ利益を見落とさないよう、最高売却額でも利益が出ない価格に達したら終了します。実ゲームでの更新後の表示速度・行対応は未確認です。
 
 [ECommons](https://github.com/NightmareXIV/ECommons), NightmareXIV, MIT: ItemSearchResult price/quantity node IDs were consulted as native UI layout reference. No implementation copied or library bundled.
+
+## 1.0.0.3 persistence update (2026-10-22)
+
+Settings apply immediately. The plugin checks for changed values every 60 seconds using a monotonic clock; unchanged settings and edits reverted before the checkpoint cause zero writes. Logout flushes pending values, and Dispose makes one final attempt unless saving has already stopped after three failures. A failed attempt imposes a 60-second retry delay; repeated logout events respect this delay. Normal shutdown cannot guarantee saving when storage remains inaccessible. Forced termination may lose approximately the last 60 seconds of unsaved changes.
+
+The existing GilBeacon.json is read directly, including old Dalamud `$type` metadata. No production migration is run by development scripts. Saving uses a flushed and validated temporary file followed by atomic replacement. Previous valid files are retained as `.bak.<generation>` (up to three); invalid files are preserved as `.corrupt-*`, not promoted into valid backups. An interrupted post-commit cleanup can temporarily leave extra backup files; the next successful changed save prunes them. Read access failure blocks writes until the error is resolved and the plugin reloaded. Save failures stop after three attempts, retain pending values in memory and expose a localized retry button. No host backup-database write is requested by this path.
+
+No transaction history exists, so date partitions and a HistoryFiles tab are not applicable. Highlighting, NPC resale arithmetic and market requests are unchanged. See `PERSISTENCE_VERIFICATION.md` for synthetic measurements and unverified live-game behavior.

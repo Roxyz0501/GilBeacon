@@ -130,7 +130,9 @@ public sealed class ConfigStore : IDisposable
                 // Access failures propagate. Only malformed JSON is classified as corrupt.
                 if (ReadValid(path) != null)
                 {
-                    long generation = Backups().Select(x => long.Parse(x[(x.LastIndexOf('.') + 1)..])).DefaultIfEmpty(0).Max() + 1;
+                    long latest = Backups().Select(x => long.Parse(x[(x.LastIndexOf('.') + 1)..])).DefaultIfEmpty(0).Max();
+                    if (latest == long.MaxValue) throw new IOException("Backup generation limit reached; preserve backups and rename them before retrying.");
+                    long generation = latest + 1;
                     previous = path + ".bak." + generation.ToString("D19");
                 }
                 else previous = path + ".corrupt-" + Guid.NewGuid().ToString("N");
@@ -179,7 +181,11 @@ public sealed class ConfigStore : IDisposable
             using var doc = JsonDocument.Parse(stream);
             var root = doc.RootElement;
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("Version", out var version) ||
-                version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out var v) || v != 1 || !root.TryGetProperty("Enabled", out var enabled) ||
+                version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out var v)) return null;
+            // Unknown schemas may be valid newer data. Never replace them with
+            // defaults or an older backup when this plugin is downgraded.
+            if (v != 1) throw new IOException($"Unsupported settings version {v}; use the matching plugin version.");
+            if (!root.TryGetProperty("Enabled", out var enabled) ||
                 enabled.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) return null;
             string? language = null;
             if (root.TryGetProperty("Language", out var lang) && lang.ValueKind != JsonValueKind.Null)

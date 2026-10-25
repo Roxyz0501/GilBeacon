@@ -63,6 +63,47 @@ Check(!MarketReadiness.BeyondProfitRange(100, 100, true, false)); // HQ can stil
 Check(MarketReadiness.BeyondProfitRange(110, 100, true, false));
 Check(!MarketReadiness.BeyondProfitRange(150, 144, false, true));
 Check(MarketReadiness.BeyondProfitRange(159, 144, false, true));
+Check(MarketReadiness.UsableBounds(0, 0, 700, 30));
+Check(!MarketReadiness.UsableBounds(float.NaN, 0, 700, 30));
+Check(!MarketReadiness.UsableBounds(0, float.PositiveInfinity, 700, 30));
+Check(!MarketReadiness.UsableBounds(700, 0, 0, 30));
+Check(!MarketReadiness.UsableBounds(0, 0, 700, 0));
+// Full review: quality/item identity and failed lookup must never reuse stale pricing.
+Check(!MarketReadiness.MatchesItem(100, 101));
+Check(!MarketReadiness.MatchesItem(0, 0));
+Check(MarketReadiness.MatchesItem(100, 100));
+Check(MarketReadiness.MatchesRow("99", "1", false, 99, 1, false));
+Check(!MarketReadiness.MatchesRow("99", "1", false, 99, 1, true));
+Check(!MarketReadiness.MatchesRow("99", "1", true, 99, 1, false));
+Check(MarketReadiness.MatchesRow("99", "1", true, 99, 1, true));
+Check(!MarketReadiness.MatchesRow("99", "2", true, 99, 1, true));
+var cache = new ItemPriceCache(); int reads = 0;
+VendorInfo ReadVendor(uint id) { reads++; if (id == 2) throw new IOException("Injected sheet failure"); return new(id * 100, true, false); }
+Check(cache.Get(1, ReadVendor).Price == 100);
+for (int frame = 0; frame < 10000; frame++) Check(cache.Get(1, ReadVendor).Price == 100);
+Check(reads == 1);
+for (int attempt = 0; attempt < 3; attempt++)
+{
+    bool threw = false;
+    try { cache.Get(2, ReadVendor); } catch (IOException) { threw = true; }
+    Check(threw); // No result from item 1 is returned, even on repeated failure.
+}
+Check(reads == 4);
+Check(cache.Get(3, ReadVendor).Price == 300 && reads == 5);
+cache.Clear(); Check(cache.Get(3, ReadVendor).Price == 300 && reads == 6);
+Check(cache.Get(0, ReadVendor).Price == 0 && reads == 6);
+long highlightTime = 0;
+var failures = new HighlightFailures(() => highlightTime);
+for (int attempt = 0; attempt < 3; attempt++)
+{
+    Check(failures.CanAttempt);
+    failures.Failed(new IOException("Injected render failure"));
+    for (int frame = 0; frame < 1000; frame++) Check(!failures.CanAttempt);
+    highlightTime += 5000;
+}
+Check(failures.Stopped && !failures.CanAttempt);
+highlightTime += 60000; Check(!failures.CanAttempt);
+failures.Reset(); Check(failures.CanAttempt && failures.Error == null);
 checks += PersistenceTests.Run(Path.Combine(AppContext.BaseDirectory, "persistence-tests", Guid.NewGuid().ToString("N")));
 Console.WriteLine($"Passed {checks} checks.");
 

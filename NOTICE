@@ -16,5 +16,5 @@ No implementation source from those projects is copied; the arithmetic is
 independently implemented. See README for evidence and rounding limitations.
 
 ECommons by NightmareXIV (MIT) was consulted for ItemSearchResult
-price/quantity node IDs (native UI layout). No implementation copied.
+HQ/price/quantity node IDs (native UI layout). No implementation copied.
 https://github.com/NightmareXIV/ECommons

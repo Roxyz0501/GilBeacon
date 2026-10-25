@@ -2,7 +2,7 @@
 
 ![icon](GilBeacon/images/icon.png)
 
-Roxyz0501 / 1.0.0.3 / Dalamud API 15 / Apache-2.0
+Roxyz0501 / 1.0.0.4 / Dalamud API 15 / Apache-2.0
 
 マーケット出品一覧で、購入手数料込みでもNPCへの売却で利益が出る行を緑色でハイライトします。行の右側に **+1,234 G** の形式で、その出品全個数の利益総額を表示します。HQにも対応しています。
 
@@ -79,3 +79,11 @@ Settings apply immediately. The plugin checks for changed values every 60 second
 The existing GilBeacon.json is read directly, including old Dalamud `$type` metadata. No production migration is run by development scripts. Saving uses a flushed and validated temporary file followed by atomic replacement. Previous valid files are retained as `.bak.<generation>` (up to three); invalid files are preserved as `.corrupt-*`, not promoted into valid backups. An interrupted post-commit cleanup can temporarily leave extra backup files; the next successful changed save prunes them. Read access failure blocks writes until the error is resolved and the plugin reloaded. Save failures stop after three attempts, retain pending values in memory and expose a localized retry button. No host backup-database write is requested by this path.
 
 No transaction history exists, so date partitions and a HistoryFiles tab are not applicable. Highlighting, NPC resale arithmetic and market requests are unchanged. See `PERSISTENCE_VERIFICATION.md` for synthetic measurements and unverified live-game behavior.
+
+## 1.0.0.4 review fixes (2026-10-25)
+
+- Item-price cache is committed only after successful lookup; a failed item change cannot reuse the previous item's NPC price.
+- Displayed result item and row HQ/NQ must match the market data, in addition to price and quantity. Transitional/mismatched rows are skipped. Non-finite/reversed row bounds are rejected.
+- Managed highlight read/draw errors wait five seconds before retrying and stop after three consecutive failures. The settings UI remains accessible and includes a retry button. Invalid native pointers/access violations cannot be made safe by this managed exception guard.
+- Unknown settings schema versions block writes instead of restoring an older backup or replacing newer data with defaults. Backup generation overflow is rejected before replacement.
+- Regression suite: 33,165 checks including repeated idle/cache/failure checks; Release build zero warnings/errors. Actual game row mapping and lifecycle remain unverified. See REVIEW_2026-10-25.md.

@@ -1,6 +1,12 @@
 namespace GilBeacon;
 public static class MarketReadiness
 {
+    public static bool MatchesItem(uint searchItem, uint displayedItem) => searchItem != 0 && searchItem == displayedItem;
+    public static bool MatchesRow(string unitText, string quantityText, bool shownHq, uint price, uint quantity, bool offerHq) =>
+        shownHq == offerHq && MatchesNumbers(unitText, quantityText, price, quantity);
+    public static bool UsableBounds(float x1, float y1, float x2, float y2) =>
+        float.IsFinite(x1) && float.IsFinite(y1) && float.IsFinite(x2) && float.IsFinite(y2) &&
+        x2 - x1 is >= 40 and <= 2000 && y2 - y1 is >= 8 and <= 150;
     // A partially populated result list is usable. Each rendered row is checked
     // against its current price and quantity before drawing, rather than waiting
     // for the entire UI list and proxy counts to match.

@@ -165,6 +165,24 @@ static class PersistenceTests
             store.Dispose(); Check(Read(p).Language == "fr" && !store.Pending);
             Check(writer.IsCompleted && change.IsCompleted);
         }
+        p = FileAt("future-schema");
+        string future = "{\"Version\":2,\"Language\":\"en\",\"Enabled\":false,\"FutureData\":42}";
+        File.WriteAllText(p, future);
+        Seed(p + ".bak.0000000000000000001", original);
+        using (var store = new ConfigStore(p))
+        {
+            Check(store.LoadBlocked && store.Error != null);
+            store.Change(original); store.Retry(); store.Dispose();
+            Check(store.SaveCount == 0 && File.ReadAllText(p) == future);
+        }
+        p = FileAt("generation-overflow"); Seed(p, original);
+        Seed(p + ".bak.9223372036854775807", original);
+        using (var store = new ConfigStore(p))
+        {
+            store.Change(original with { Enabled = false }); store.Flush();
+            Check(store.Failures == 1 && store.Pending && Read(p) == original);
+            Check(!Directory.GetFiles(directory, "generation-overflow.json.bak.*").Any(x => x.Contains(".-")));
+        }
         File.WriteAllText(Path.Combine(directory, "metrics.json"), JsonSerializer.Serialize(metrics, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"Persistence: {checks} checks; metrics: {Path.Combine(directory, "metrics.json")}");
         return checks;

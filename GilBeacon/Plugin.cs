@@ -7,6 +7,7 @@ using Lumina.Excel.Sheets;
 using Roxyz0501.Dalamud.CommonUi;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Bounds = FFXIVClientStructs.FFXIV.Common.Math.Bounds;
 
 namespace GilBeacon;
@@ -26,15 +27,15 @@ public sealed unsafe class Plugin : IDalamudPlugin
     private bool disposed;
     private string? reportedError;
     private bool open;
-    private uint cachedItem;
-    private uint sellPrice;
-    private bool canHq;
-    private bool materia;
+    private readonly ItemPriceCache prices = new();
+    private readonly HighlightFailures highlightFailures = new();
+    private readonly Func<uint, VendorInfo> readVendor;
     private readonly CommandInfo command;
 
     public Plugin(IDalamudPluginInterface pi, ICommandManager commands, IGameGui gui, IDataManager data, IClientState client, IFramework framework, IPluginLog log)
     {
         this.pi = pi; this.commands = commands; this.gui = gui; this.data = data;
+        readVendor = ReadVendor;
         this.framework = framework; this.client = client; this.log = log;
         settings = new ConfigStore(pi.ConfigFile.FullName);
         var loaded = settings.Current;
@@ -75,7 +76,17 @@ public sealed unsafe class Plugin : IDalamudPlugin
     private void Draw()
     {
         if (disposed) return;
-        DrawHighlights();
+        if (highlightFailures.CanAttempt)
+        {
+            try { DrawHighlights(); highlightFailures.Reset(); }
+            catch (Exception ex)
+            {
+                prices.Clear();
+                highlightFailures.Failed(ex);
+                if (highlightFailures.Count == 1 || highlightFailures.Stopped)
+                { log.Warning(ex, "Gil Beacon highlight read failed ({Count}/3).", highlightFailures.Count); open = true; }
+            }
+        }
         if (!open) return;
         using var font = fonts.Push(config.Language);
         ImGui.SetNextWindowSize(new Vector2(650, 330), ImGuiCond.FirstUseEver);
@@ -89,6 +100,13 @@ public sealed unsafe class Plugin : IDalamudPlugin
                     if (ImGui.Checkbox(T("HighlightEnabled") + "###Enabled", ref enabled))
                     { config.Enabled = enabled; Changed(); }
                     ImGui.TextWrapped(T("Explanation"));
+                    if (highlightFailures.Error != null)
+                    {
+                        ImGui.TextWrapped(T("HighlightError"));
+                        ImGui.TextWrapped(highlightFailures.Error);
+                        if (ImGui.Button(T("RetryHighlight") + "###RetryHighlight"))
+                        { prices.Clear(); highlightFailures.Reset(); }
+                    }
                     ImGui.TextWrapped(T("SavePolicy"));
                     if (settings.LoadNotice is { } notice) ImGui.TextWrapped(T(notice));
                     if (settings.Error != null)
@@ -112,11 +130,16 @@ public sealed unsafe class Plugin : IDalamudPlugin
         }
         ImGui.End();
     }
+    private VendorInfo ReadVendor(uint id)
+    {
+        if (!data.GetExcelSheet<Item>().TryGetRow(id, out var item)) return default;
+        return new(item.PriceLow, item.CanBeHq, item.ItemUICategory.RowId == 58);
+    }
     private void DrawHighlights()
     {
         if (!config.Enabled) return;
         var addon = gui.GetAddonByName<AddonItemSearchResult>("ItemSearchResult");
-        if (addon == null || !addon->IsVisible || !addon->IsReady || addon->Results == null) { cachedItem = 0; return; }
+        if (addon == null || !addon->IsVisible || !addon->IsReady || addon->Results == null) { prices.Clear(); return; }
         var module = InfoModule.Instance();
         if (module == null) return;
         var proxy = module->GetInfoProxyItemSearch();
@@ -124,17 +147,12 @@ public sealed unsafe class Plugin : IDalamudPlugin
         var list = addon->Results;
         if (!MarketReadiness.CanDraw(proxy->SearchItemId, proxy->ListingCount, list->ListLength,
             addon->IsReady, list->IsUpdatePending, list->IsScrollRefreshPending)) return;
-        if (cachedItem != proxy->SearchItemId)
-        {
-            cachedItem = proxy->SearchItemId;
-            if (data.GetExcelSheet<Item>().TryGetRow(cachedItem, out var item))
-            {
-                sellPrice = item.PriceLow;
-                canHq = item.CanBeHq;
-                materia = item.ItemUICategory.RowId == 58;
-            }
-            else { sellPrice = 0; canHq = materia = false; }
-        }
+        var agent = AgentItemSearch.Instance();
+        if (agent == null || !MarketReadiness.MatchesItem(proxy->SearchItemId, agent->ResultItemId)) return;
+        uint cachedItem = proxy->SearchItemId;
+        var vendor = prices.Get(cachedItem, readVendor);
+        uint sellPrice = vendor.Price;
+        bool canHq = vendor.CanHq, materia = vendor.Materia;
         if (sellPrice == 0 || list->NumVisibleItems is < 1 or > 100) return;
         int first = Math.Max(0, list->FirstVisibleItemIndex);
         int count = Math.Min((int)proxy->ListingCount, list->ListLength);
@@ -157,17 +175,18 @@ public sealed unsafe class Plugin : IDalamudPlugin
             if (i < first || i >= end) continue;
             var renderer = list->GetItemRenderer(i);
             if (renderer == null || renderer->ListItemIndex != i || renderer->OwnerNode == null) continue;
+            var hqNode = renderer->GetImageNodeById(3);
             var priceNode = renderer->GetTextNodeById(5);
             var quantityNode = renderer->GetTextNodeById(6);
-            if (priceNode == null || quantityNode == null || !MarketReadiness.MatchesNumbers(
-                priceNode->NodeText.ToString(), quantityNode->NodeText.ToString(), offer.UnitPrice, offer.Quantity)) continue;
+            if (hqNode == null || priceNode == null || quantityNode == null || !MarketReadiness.MatchesRow(
+                priceNode->NodeText.ToString(), quantityNode->NodeText.ToString(), hqNode->AtkResNode.IsVisible(), offer.UnitPrice, offer.Quantity, offer.IsHqItem)) continue;
             ulong profit = Profit.Calculate(sellPrice, offer.UnitPrice, offer.Quantity, offer.TotalTax, offer.IsHqItem, materia);
             if (profit == 0) continue;
             var node = &renderer->OwnerNode->AtkResNode;
             if (!node->IsVisible()) continue;
             Bounds bounds = default;
             node->GetBounds(&bounds);
-            if (bounds.Width is < 40 or > 2000 || bounds.Height is < 8 or > 150) continue;
+            if (!MarketReadiness.UsableBounds(bounds.Pos1.X, bounds.Pos1.Y, bounds.Pos2.X, bounds.Pos2.Y)) continue;
             var min = new Vector2(bounds.Pos1.X, bounds.Pos1.Y);
             var max = new Vector2(bounds.Pos2.X, bounds.Pos2.Y);
             var draw = ImGui.GetForegroundDrawList();

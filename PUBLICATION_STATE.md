@@ -1,5 +1,16 @@
 # Publication state
 
+## 2026-10-25 — Gil Beacon 1.0.0.4 full review fixes
+
+- Release: https://github.com/Roxyz0501/GilBeacon/releases/tag/v1.0.0.4
+- ZIP: https://github.com/Roxyz0501/GilBeacon/releases/download/v1.0.0.4/GilBeacon-1.0.0.4.zip
+- Source/tag: `90f571762e92d535bc8e84e22d2cf762cf42a166`; ZIP 328,520 bytes, nine allowlisted files; SHA-256 `5DE5C5E1FACA875CFA4082CB1A6E6D9C38BABC1074C97A01B9679C3C472F078D`.
+- Fixed stale NPC price after item-sheet exception; displayed item identity and row quality must match; managed highlight failures back off five seconds and stop after three consecutive errors with manual retry; reject non-finite/reversed bounds. Unknown settings schemas block writes rather than restoring older data; backup generation overflow rejected before replacement.
+- 33,165 checks passed, including repeated cache/idle/stopped frames and 73 persistence checks. Clean Release zero warnings/errors. Same item read 10,000 times invokes sheet reader once; unchanged configuration writes remain zero. Canonical tabs byte-identical; source/package scans passed. Review details: REVIEW_2026-10-25.md.
+- Public repository/icon HTTP200 (image/png), anonymous ZIP hash matched. Index commit `be8393c5e21be7d599bc5eda3785d71c30bc921c`: connector/pinned raw verified1.0.0.4, all13 other entries unchanged. Normal raw main initially cached1.0.0.3.
+- Published under standing project update authorization. Source/index/records use connector; CLI only for unsupported Release/assets. No production data or installed DLL modified. Live native row mapping, HQ image state, scrolling/DPI/lifecycle and physical SSD writes remain unverified.
+
+
 ## 2026-10-22 — Gil Beacon 1.0.0.3 persistence safeguards published
 
 - Release: https://github.com/Roxyz0501/GilBeacon/releases/tag/v1.0.0.3

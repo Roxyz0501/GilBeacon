@@ -31,6 +31,10 @@ public sealed unsafe class Plugin : IDalamudPlugin
     private readonly HighlightFailures highlightFailures = new();
     private readonly Func<uint, VendorInfo> readVendor;
     private readonly CommandInfo command;
+    // Host SDK libraries are not external plugin dependencies.
+    private static readonly PluginDependency[] Dependencies = [];
+    private readonly StandardPluginInfo info = new(Dependencies);
+    private readonly System.Action? drawInfo;
 
     public Plugin(IDalamudPluginInterface pi, ICommandManager commands, IGameGui gui, IDataManager data, IClientState client, IFramework framework, IPluginLog log)
     {
@@ -49,6 +53,7 @@ public sealed unsafe class Plugin : IDalamudPlugin
             Changed();
         }
         fonts = new LocalizedFonts(pi.UiBuilder.FontAtlas, []);
+        drawInfo = Dependencies.Length == 0 ? null : () => info.Draw(pi, config.Language!);
         command = new CommandInfo((_, _) => Open()) { HelpMessage = T("CommandHelp") };
         commands.AddHandler("/gilbeacon", command);
         pi.UiBuilder.Draw += Draw;
@@ -124,7 +129,8 @@ public sealed unsafe class Plugin : IDalamudPlugin
                         config.Language = changed; Changed();
                         command.HelpMessage = T("CommandHelp");
                     }
-                }, T("Support"), () => StandardPluginTabs.DrawSupportContent(T("SupportHeading"), T("SupportText"), T("SupportRecipient"), T("OpenKoFi")));
+                }, T("Support"), () => StandardPluginTabs.DrawSupportContent(T("SupportHeading"), T("SupportText"), T("SupportRecipient"), T("OpenKoFi")),
+                    StandardPluginInfo.Title(config.Language!), drawInfo);
                 ImGui.EndTabBar();
             }
         }
@@ -214,4 +220,5 @@ public sealed unsafe class Plugin : IDalamudPlugin
         finally { fonts.Dispose(); }
     }
 }
+
 

@@ -2,11 +2,9 @@
 
 ![icon](GilBeacon/images/icon.png)
 
-Roxyz0501 / 1.0.0.4 / Dalamud API 15 / Apache-2.0
+Roxyz0501 / 1.0.0.5 / Dalamud API 15 / Apache-2.0
 
-マーケット出品一覧で、購入手数料込みでもNPCへの売却で利益が出る行を緑色でハイライトします。行の右側に **+1,234 G** の形式で、その出品全個数の利益総額を表示します。HQにも対応しています。
-
-**公開プレビュー:** 実ゲームでの行対応、ソート・スクロール、DPI、画面重なり、売却時の受取額は未検証です。画面右端では利益ラベルが欠ける場合があります。
+マーケット出品一覧で、購入手数料込みでもNPCへの売却で利益が出る行を緑色でハイライトします。行の右側に **+1,234 G** の形式で、その出品全個数の利益総額を表示します。
 
 ## インストール
 
@@ -14,76 +12,27 @@ Dalamudのカスタムリポジトリに次のURLを登録し、Gil Beaconを検
 
 `https://raw.githubusercontent.com/Roxyz0501/DalamudPluginRepo/main/repo.json`
 
-設定コマンド: `/gilbeacon`。自動購入・自動売却は行いません。ほかのプラグインへの依存はありません。
+設定コマンドは `/gilbeacon` です。外部プラグインの導入は不要です。依存プラグインがないため「情報」タブは表示されません。設定・言語設定・支援の各タブを利用できます。
 
-## 計算
+## 利益の表示
 
 `利益 = NPC売却単価 × 個数 − (出品単価 × 個数 + 出品全体の購入手数料)`
 
-- 通常のNQ: ゲームItemシートのPriceLow。NQだから減額する処理はありません。
-- マテリア商品: PriceLowに10%を加算し端数切り上げ。144→159、151→167、197→217。品質のない商品すべてにこの補正を適用するわけではありません。
-- HQ: NQ価格に10%を加算し、1個ごとに端数切り上げ。例えば296→326、11→13。単価を丸めてから個数を掛けます。
-- 1ギル以上の利益のみ表示。手数料はゲーム側のTotalTaxを使用します。
-- NPC売却額0、マネキン・セット販売、読込中・不整合の結果は除外します。
-- 装着マテリアによる加算・特殊買取ボーナスは含めません。
+- HQはNPC単価に10%を加算し、1個ごとに端数を切り上げます。
+- マテリア商品にも買取額補正を適用します。例えば買取159ギル、単価99ギル、個数1、手数料4ギルなら利益56ギルです。
+- 受信済みの出品を安い順に判定し、利益が出る表示行からハイライトします。
+- 1ギル以上の利益を表示します。NPC買取額0、マネキン・セット販売、照合できない行は対象外です。
+- 装着マテリアによる加算や特殊買取ボーナスは含みません。
+- 自動購入・自動売却は行いません。画面右端では利益ラベルが欠ける場合があります。
 
-HQ計算については実装例に相違があるため、単純にコードを転載せず、[Lodestoneの実売却価格の報告（296のHQが326）](https://jp.finalfantasyxiv.com/lodestone/character/29950599/blog/4547134)と照合し端数切り上げを採用しました。実クライアントでの売却額照合は未実施です。
+## 設定と言語
 
-## 言語
+日本語・英語・ドイツ語・フランス語・韓国語・簡体字・繁体字に対応しています。初回はゲーム言語、Dalamud表示言語、英語の順で選びます。保存済みの言語を起動時に変更しません。
 
-日本語・英語・ドイツ語・フランス語・韓国語・簡体字・繁体字。設定右側の言語設定タブから変更できます。初回はゲーム言語→Dalamud公開UiLanguage→英語で決定し保存します。保存済みの選択は起動時に上書きしません。公開されたランチャー言語APIは利用していません。ゲーム由来アイテム名を独自翻訳しません。フォントはDalamud提供Noto CJKを使用。ライブでの字形・長文表示は未検証です。
+設定変更はすぐに反映し、60秒ごとの変更時とログアウト・正常終了時に保存します。正常な設定のバックアップを最大3世代保持します。保存エラーが続くと自動保存を停止するため、設定画面の案内に従って原因を解消して再試行してください。強制終了や保存障害では未保存の変更が失われる場合があります。
 
-## Build and checks
+## 支援
 
-.NET 10 SDK and Dalamud API 15 development libraries are required.
+任意で [Roxyz0501をKo-fiで支援](https://ko-fi.com/roxyz0501)できます。
 
-```powershell
-dotnet build GilBeacon/GilBeacon.csproj -c Release
-dotnet run --project Tests/Tests.csproj -c Release
-```
-
-20,064 arithmetic/localization checks plus persistence regression checks cover NQ/HQ arithmetic, rounding before multiplication, tax and break-even boundaries, overflow rejection, random BigInteger comparisons, localization completeness and language normalization. These checks do not establish live-game UI correctness.
-
-## Load budget
-
-No external HTTP requests or market requests. No database. At most one local Item-sheet row lookup on item change; unchanged redraws perform zero sheet lookups. Cache holds one item and is invalidated on close. At most 100 locally available row indices are sorted by price per draw. Profit checks stop at the maximum possible resale value (including HQ when supported); only visible profitable candidates have their renderer text checked and are drawn immediately in that loop. Partial results do not wait for count equality or the global update flag. Price and quantity must match the displayed row. No requests are added; game-side listing delivery can still delay availability. Changed config values are saved at 60-second checkpoints and on logout/disposal; equivalent values perform no serialization or writes. One bounded synchronous writer handles the tiny settings payload, with no background task or timer. These are code-derived limits, not live-game measurements.
-
-## Sources and license
-
-New standalone plugin, Apache-2.0. Author: Roxyz0501.
-
-- [Bait Beacon](https://github.com/Roxyz0501/BaitBeacon), Roxyz0501, Apache-2.0: selected localization and font utilities reused and adapted. No fishing data is included.
-- Shared tab implementation: canonical Roxyz0501 StandardPluginTabs.
-- [FFXIVClientStructs](https://github.com/aers/FFXIVClientStructs), aers and contributors, MIT: host-provided native API definitions for market data and list renderers. No host libraries are bundled.
-- HQ formula investigation consulted [LootView](https://github.com/GitHixy/LootView), GitHixy, GPL-3.0, and [CriticalCommonLib](https://github.com/Critical-Impact/CriticalCommonLib), Critical-Impact. Only pricing behavior was investigated; their source implementation was not copied.
-- Original icon generated for Gil Beacon. No third-party or game artwork reused.
-
-Optional support: [Roxyz0501 on Ko-fi](https://ko-fi.com/roxyz0501).
-
-## 1.0.0.1 fix
-
-Live read-only diagnostics found the SDK WaitingForListings flag set while 35 listings, 10 visible renderers and the addon were ready. Removed this incorrect blocking condition. Readiness now uses the populated list count, addon readiness and UI update/scroll state; each listing still must match the search item. The user-reported 100-gil listing versus 217-gil NPC value is covered by regression tests (112 gil profit for one item with 5 gil tax). Actual rendered output after this update still needs in-game confirmation.
-
-## 1.0.0.2 fix
-
-マテリア商品の買取額を修正。画像の例は159 − (99 + 4) = **56ギル**。根拠: [公式メガマテリジャ159](https://jp.finalfantasyxiv.com/lodestone/playguide/db/item/eee0f70611d/)、[エクスマテリジャ167](https://jp.finalfantasyxiv.com/lodestone/playguide/db/item/cd92a6cfb05/)。通常の品質なし商品には一律加算しません。
-
-受信済みの出品を安い順に判定し、利益が出る表示行をその場で描画します。全件受信や件数一致を待ちません。後続のHQ利益を見落とさないよう、最高売却額でも利益が出ない価格に達したら終了します。実ゲームでの更新後の表示速度・行対応は未確認です。
-
-[ECommons](https://github.com/NightmareXIV/ECommons), NightmareXIV, MIT: ItemSearchResult price/quantity node IDs were consulted as native UI layout reference. No implementation copied or library bundled.
-
-## 1.0.0.3 persistence update (2026-10-22)
-
-Settings apply immediately. The plugin checks for changed values every 60 seconds using a monotonic clock; unchanged settings and edits reverted before the checkpoint cause zero writes. Logout flushes pending values, and Dispose makes one final attempt unless saving has already stopped after three failures. A failed attempt imposes a 60-second retry delay; repeated logout events respect this delay. Normal shutdown cannot guarantee saving when storage remains inaccessible. Forced termination may lose approximately the last 60 seconds of unsaved changes.
-
-The existing GilBeacon.json is read directly, including old Dalamud `$type` metadata. No production migration is run by development scripts. Saving uses a flushed and validated temporary file followed by atomic replacement. Previous valid files are retained as `.bak.<generation>` (up to three); invalid files are preserved as `.corrupt-*`, not promoted into valid backups. An interrupted post-commit cleanup can temporarily leave extra backup files; the next successful changed save prunes them. Read access failure blocks writes until the error is resolved and the plugin reloaded. Save failures stop after three attempts, retain pending values in memory and expose a localized retry button. No host backup-database write is requested by this path.
-
-No transaction history exists, so date partitions and a HistoryFiles tab are not applicable. Highlighting, NPC resale arithmetic and market requests are unchanged. See `PERSISTENCE_VERIFICATION.md` for synthetic measurements and unverified live-game behavior.
-
-## 1.0.0.4 review fixes (2026-10-25)
-
-- Item-price cache is committed only after successful lookup; a failed item change cannot reuse the previous item's NPC price.
-- Displayed result item and row HQ/NQ must match the market data, in addition to price and quantity. Transitional/mismatched rows are skipped. Non-finite/reversed row bounds are rejected.
-- Managed highlight read/draw errors wait five seconds before retrying and stop after three consecutive failures. The settings UI remains accessible and includes a retry button. Invalid native pointers/access violations cannot be made safe by this managed exception guard.
-- Unknown settings schema versions block writes instead of restoring an older backup or replacing newer data with defaults. Backup generation overflow is rejected before replacement.
-- Regression suite: 33,165 checks including repeated idle/cache/failure checks; Release build zero warnings/errors. Actual game row mapping and lifecycle remain unverified. See REVIEW_2026-10-25.md.
+ライセンスはApache-2.0です。権利表示はLICENSEとNOTICEを参照してください。

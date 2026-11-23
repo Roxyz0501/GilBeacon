@@ -1,5 +1,16 @@
 # Publication state
 
+## 2026-11-23 — Gil Beacon 1.0.0.5 shared dependency information
+
+- Release: https://github.com/Roxyz0501/GilBeacon/releases/tag/v1.0.0.5
+- ZIP: https://github.com/Roxyz0501/GilBeacon/releases/download/v1.0.0.5/GilBeacon-1.0.0.5.zip
+- Source/tag: `3598823d0c27aa5735dc77aa84932ac9c9736b50`; ZIP 325,169 bytes, eight allowlisted files; SHA-256 `8EC3AC804A680A6653912BA1563D3FFE140A3BB6691595D19B499307F2451DA8`.
+- Canonical StandardPluginInfo.cs and StandardPluginTabs.cs copied byte-identically. One info instance and explicit trailing-tab call installed; zero actual external plugin dependencies means null info callback and no Information tab, installed-plugin enumeration or extra requests. Existing Settings/Language/Support UI retained.
+- 33,165 regression checks passed, including 73 persistence checks; clean Release zero warnings/errors. Empty definition/null callback/call-site/manifest assertions and canonical byte identity verified. NPC highlight/readiness/persistence unchanged. Public README/NOTICE cleaned of reference-only history while retaining required reused-code notices. See VALIDATION.md; live-game rendering/lifecycle remain unverified.
+- Public repository/icon HTTP200 (image/png), anonymous ZIP hash matched. Index commit `fbc75cad902d79d95111fae5699e52a080547ccf`: pinned raw and connector verified1.0.0.5; all17 other entries preserved after refetching concurrent-update conflicts. Normal raw main initially cached1.0.0.4.
+- Published under standing authorization and explicit follow-up. Connector used for source/index/records; CLI only for unsupported Release/assets. Release text contains user-facing changes only. No production data or installed DLL modified; shared templates untouched.
+
+
 ## 2026-10-25 — Gil Beacon 1.0.0.4 full review fixes
 
 - Release: https://github.com/Roxyz0501/GilBeacon/releases/tag/v1.0.0.4

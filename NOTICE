@@ -10,11 +10,4 @@ https://github.com/aers/FFXIVClientStructs
 Dalamud and Lumina are provided by the plugin host.
 The icon is original generated artwork for this project, not game artwork.
 
-HQ formula investigation consulted GitHixy/LootView (GPL-3.0),
-Critical-Impact/CriticalCommonLib and a firsthand Lodestone observation.
-No implementation source from those projects is copied; the arithmetic is
-independently implemented. See README for evidence and rounding limitations.
-
-ECommons by NightmareXIV (MIT) was consulted for ItemSearchResult
-HQ/price/quantity node IDs (native UI layout). No implementation copied.
-https://github.com/NightmareXIV/ECommons
+StandardPluginInfo.cs is the canonical Roxyz0501 shared dependency UI template.
